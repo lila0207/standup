@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>讓字站起來｜立體字互動練習</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EAF0F3; --surface:#FFFFFF; --ink:#1F2A33; --muted:#566673; --line:#C7D3DA;
+  --paper:#F9FBFC; --grid:#DCE6EC; --vp:#E2463B; --accent:#2364A8; --hl:#FFD24D;
+  --chip:#F1F5F7; --svgink:#1F2A33;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141A1F; --surface:#1D252C; --ink:#E5ECF1; --muted:#9BAAB6; --line:#34434E;
+    --paper:#EDF2F5; --grid:#D2DDE4; --vp:#E2463B; --accent:#74AEEB; --hl:#F5C842;
+    --chip:#26313A; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141A1F; --surface:#1D252C; --ink:#E5ECF1; --muted:#9BAAB6; --line:#34434E;
+  --paper:#EDF2F5; --grid:#D2DDE4; --vp:#E2463B; --accent:#74AEEB; --hl:#F5C842;
+  --chip:#26313A; color-scheme: dark;
+}
+:root{ box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+html{ scroll-padding-top:env(safe-area-inset-top,0px); }
+*,*::before,*::after{ box-sizing:inherit; }
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  font-size:17px; line-height:1.7;
+}
+.wrap{ max-width:1180px; margin:0 auto; padding:28px 20px 64px; }
+header h1{
+  font-size:clamp(2rem,5vw,3.2rem); font-weight:900; line-height:1.15; margin:0 0 8px;
+  letter-spacing:.04em;
+  text-shadow:1px 1px 0 var(--line),2px 2px 0 var(--line),3px 3px 0 var(--line),4px 4px 0 var(--line),5px 5px 0 var(--muted);
+}
+header p{ margin:0; color:var(--muted); max-width:60ch; }
+h2{ font-size:1.45rem; font-weight:900; margin:48px 0 12px; }
+h3{ font-size:1.05rem; margin:0 0 6px; }
+
+.lab{ display:grid; grid-template-columns:minmax(0,1.65fr) minmax(290px,1fr); gap:20px; margin-top:24px; align-items:start; }
+@media (max-width:880px){ .lab{ grid-template-columns:1fr; } }
+
+.board{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px; }
+.board svg{ display:block; width:100%; height:auto; border-radius:8px; touch-action:none; cursor:crosshair; }
+.board svg:focus-visible{ outline:3px solid var(--accent); outline-offset:3px; }
+.tip{ margin:12px 4px 2px; padding:10px 14px; background:var(--chip); border-left:5px solid var(--hl); border-radius:6px; font-size:.97rem; }
+.hint{ margin:8px 4px 0; font-size:.88rem; color:var(--muted); }
+
+.panel{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:18px; display:flex; flex-direction:column; gap:18px; }
+.field > .lab-title{ font-weight:700; font-size:.95rem; margin-bottom:6px; display:block; }
+.seg{ display:flex; flex-wrap:wrap; gap:6px; }
+button{
+  font:inherit; font-size:.93rem; color:var(--ink); background:var(--chip);
+  border:1px solid var(--line); border-radius:8px; padding:6px 12px; cursor:pointer;
+}
+button:hover{ border-color:var(--accent); }
+button:focus-visible, input:focus-visible{ outline:3px solid var(--accent); outline-offset:2px; }
+button[aria-pressed="true"]{ background:var(--ink); color:var(--surface); border-color:var(--ink); }
+input[type="text"]{
+  font:inherit; font-size:1.25rem; font-weight:700; letter-spacing:.15em; text-transform:uppercase;
+  width:100%; padding:8px 12px; border:2px solid var(--line); border-radius:8px; background:var(--paper); color:#1F2A33;
+}
+input[type="range"]{ width:100%; accent-color:var(--accent); }
+.row{ display:flex; gap:8px; align-items:center; }
+.small{ font-size:.85rem; color:var(--muted); margin-top:4px; }
+.swatches{ display:flex; gap:8px; margin-top:8px; }
+.sw{ width:30px; height:30px; border-radius:50%; padding:0; border:3px solid transparent; }
+.sw[aria-pressed="true"]{ border-color:var(--ink); background:inherit; }
+.sw:disabled{ opacity:.3; cursor:not-allowed; }
+[hidden]{ display:none !important; }
+
+.steps{ list-style:none; padding:0; margin:0; display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+@media (max-width:880px){ .steps{ grid-template-columns:1fr; } }
+.steps li button{
+  width:100%; height:100%; text-align:left; padding:12px 14px; background:var(--surface);
+  border:1px solid var(--line); border-radius:12px; display:block;
+}
+.steps li button[aria-pressed="true"]{ background:var(--surface); color:var(--ink); border:2px solid var(--accent); box-shadow:inset 0 -5px 0 var(--hl); }
+.steps .n{ font-weight:900; font-size:1.5rem; line-height:1; color:var(--accent); display:block; margin-bottom:4px; }
+.steps .t{ font-weight:700; display:block; }
+.steps .d{ font-size:.88rem; color:var(--muted); display:block; margin-top:4px; line-height:1.55; }
+.stepnav{ display:flex; gap:8px; margin-top:12px; }
+
+.compare{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+@media (max-width:700px){ .compare{ grid-template-columns:1fr; } }
+.compare figure{ margin:0; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px; }
+.compare svg{ width:100%; height:auto; display:block; border-radius:8px; }
+.compare figcaption{ margin-top:10px; font-size:.95rem; }
+.compare figcaption b{ display:block; font-size:1.05rem; margin-bottom:2px; }
+
+.quiz{ display:grid; gap:14px; }
+.q{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 18px; }
+.q p{ margin:0 0 10px; font-weight:700; }
+.q .opts{ display:flex; flex-wrap:wrap; gap:8px; }
+.q button.right{ background:#2E8B57; color:#fff; border-color:#2E8B57; }
+.q button.wrong{ background:var(--vp); color:#fff; border-color:var(--vp); }
+.q .fb{ margin-top:10px; font-size:.93rem; color:var(--muted); }
+.score{ font-weight:700; margin-top:6px; }
+@media (prefers-reduced-motion: reduce){ *{ transition:none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>讓字站起來</h1>
+    <p>輸入英文字母，選一種畫法，一步一步看平面字怎麼長出厚度。一點透視模式中，可以直接在畫面上拖曳紅色消失點。</p>
+  </header>
+
+  <section class="lab" aria-label="立體字練習板">
+    <div class="board">
+      <svg id="stage" viewBox="0 0 800 500" tabindex="0" role="img" aria-label="立體字畫板，可拖曳或用方向鍵移動消失點"></svg>
+      <div class="tip" id="tip" aria-live="polite"></div>
+      <p class="hint" id="hint">拖曳畫面任一處即可移動消失點；選取畫板後也可用方向鍵微調。</p>
+    </div>
+
+    <div class="panel">
+      <div class="field">
+        <label class="lab-title" for="word">要畫的字（最多 6 個英文字母）</label>
+        <input id="word" type="text" maxlength="6" value="ART" autocomplete="off" spellcheck="false">
+        <div class="seg" style="margin-top:8px" aria-label="關卡練習">
+          <button data-preset="TF">第 1 關：T F</button>
+          <button data-preset="AV">第 2 關：A V</button>
+          <button data-preset="SO">第 3 關：S O</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="lab-title">畫法</span>
+        <div class="seg" id="modeSeg">
+          <button data-mode="persp" aria-pressed="true">一點透視法</button>
+          <button data-mode="obl" aria-pressed="false">平移厚度法</button>
+        </div>
+      </div>
+
+      <div class="field" id="dirField" hidden>
+        <span class="lab-title">厚度方向</span>
+        <div class="seg" id="dirSeg">
+          <button data-dir="1,1" aria-pressed="true">往右下</button>
+          <button data-dir="-1,1" aria-pressed="false">往左下</button>
+          <button data-dir="1,-1" aria-pressed="false">往右上</button>
+          <button data-dir="-1,-1" aria-pressed="false">往左上</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="lab-title" for="depth">厚度</label>
+        <input id="depth" type="range" min="1" max="10" value="5">
+      </div>
+
+      <div class="field">
+        <span class="lab-title">光源方向</span>
+        <div class="seg" id="lightSeg">
+          <button data-light="tl" aria-pressed="true">左上方</button>
+          <button data-light="tr" aria-pressed="false">右上方</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="lab-title">配色（第 5 步顯示）</span>
+        <div class="seg" id="schemeSeg">
+          <button data-scheme="gray" aria-pressed="true">明暗灰階</button>
+          <button data-scheme="same" aria-pressed="false">同色系深淺</button>
+          <button data-scheme="comp" aria-pressed="false">對比色側面</button>
+        </div>
+        <div class="swatches" id="swatches" aria-label="正面顏色"></div>
+        <div class="small" id="schemeNote">灰階模式：正面留白最亮，側面依光源分出灰與暗。</div>
+      </div>
+
+      <div class="field" id="resetField">
+        <button id="resetVP">把消失點放回右上方</button>
+      </div>
+    </div>
+  </section>
+
+  <h2>五個步驟</h2>
+  <ol class="steps" id="steps"></ol>
+  <div class="stepnav">
+    <button id="prev">上一步</button>
+    <button id="next">下一步</button>
+  </div>
+
+  <h2>兩種畫法比一比</h2>
+  <div class="compare">
+    <figure>
+      <svg id="miniP" viewBox="200 40 440 400" aria-label="一點透視法範例"></svg>
+      <figcaption><b>一點透視法</b>每個轉角都連到同一個消失點，越往後越小，空間感強。</figcaption>
+    </figure>
+    <figure>
+      <svg id="miniO" viewBox="200 40 440 400" aria-label="平移厚度法範例"></svg>
+      <figcaption><b>平移厚度法</b>每個轉角朝同一方向畫等長的斜線，前後一樣大，最容易上手。</figcaption>
+    </figure>
+  </div>
+
+  <h2>闖關小測驗</h2>
+  <div class="quiz" id="quiz"></div>
+  <div class="score" id="score" aria-live="polite"></div>
+</div>
+
+<script>
+const FONT={
+A:["#####","#...#","#####","#...#","#...#"],B:["####.","#..#.","#####","#...#","#####"],
+C:["#####","#....","#....","#....","#####"],D:["####.","#..##","#...#","#..##","####."],
+E:["#####","#....","####.","#....","#####"],F:["#####","#....","####.","#....","#...."],
+G:["#####","#....","#.###","#...#","#####"],H:["#...#","#...#","#####","#...#","#...#"],
+I:["#####","..#..","..#..","..#..","#####"],J:["#####","...#.","...#.","#..#.","####."],
+K:["#..##","#.##.","###..","#.##.","#..##"],L:["#....","#....","#....","#....","#####"],
+M:["#####","#.#.#","#.#.#","#...#","#...#"],N:["##..#","###.#","#.###","#..##","#...#"],
+O:["#####","#...#","#...#","#...#","#####"],P:["#####","#...#","#####","#....","#...."],
+Q:["#####","#...#","#...#","#####","...##"],R:["#####","#...#","#####","#.##.","#..##"],
+S:["#####","#....","#####","....#","#####"],T:["#####","..#..","..#..","..#..","..#.."],
+U:["#...#","#...#","#...#","#...#","#####"],V:["#...#","#...#","##.##",".###.","..#.."],
+W:["#...#","#...#","#.#.#","#.#.#","#####"],X:["##.##",".###.","..#..",".###.","##.##"],
+Y:["##.##",".###.","..#..","..#..","..#.."],Z:["#####","...##","..##.",".##..","#####"]
+};
+const PALETTE=[[4,76,58],[28,90,56],[46,95,55],[145,52,44],[212,68,52],[272,52,58]];
+const INK="#1F2A33";
+const VP_DEFAULT={x:640,y:80};
+const state={word:"ART",mode:"persp",dir:[1,1],depth:5,step:1,light:"tl",scheme:"gray",color:4,vp:{...VP_DEFAULT}};
+
+const STEPS={
+ persp:[
+  ["畫平面字","用鉛筆輕輕畫出方塊字，再描出正面輪廓。字要有粗細，四周留空間。"],
+  ["拉輔助線","在紙上點一個消失點，用尺把每個轉角輕輕連到消失點。"],
+  ["決定厚度","在輔助線上取同一比例停下來。被正面擋住的轉角不必連。"],
+  ["畫後端邊線","在停筆處畫出與正面平行的線，把側面封起來。"],
+  ["上色光影","擦掉輔助線。正面最亮，受光的側面次之，背光面最暗。"]
+ ],
+ obl:[
+  ["畫平面字","用鉛筆輕輕畫出方塊字，再描出正面輪廓。字要有粗細，四周留空間。"],
+  ["決定方向","選一個厚度方向，例如右下。每個轉角都朝這個方向畫。"],
+  ["畫等長斜線","每條斜線一樣長、一樣斜，像把字整個往後推。被擋住的轉角不必畫。"],
+  ["畫後端邊線","把斜線尾端連起來，畫出與正面平行的線，封閉側面。"],
+  ["上色光影","擦掉多餘的線。正面最亮，受光的側面次之，背光面最暗。"]
+ ]
+};
+
+function build(word){
+  const chars=[...word.toUpperCase()].filter(c=>FONT[c]||c===" ").slice(0,6);
+  while(chars.length && chars[chars.length-1]===" ") chars.pop();
+  if(!chars.filter(c=>c!==" ").length) return null;
+  const n=chars.length, u=Math.min(32,600/(n*6-1)), W=(n*6-1)*u, x0=400-W/2, y0=270-2.5*u;
+  const set=new Set();
+  chars.forEach((c,i)=>{ if(c===" ")return; FONT[c].forEach((row,r)=>[...row].forEach((ch,col)=>{ if(ch==="#") set.add((i*6+col)+","+r); })); });
+  const has=(a,b)=>set.has(a+","+b);
+  const cells=[...set].map(k=>{const [gx,gy]=k.split(",").map(Number); return {gx,gy,x:x0+gx*u,y:y0+gy*u};});
+  const edges=[];
+  cells.forEach(c=>{
+    const {x,y}=c; const cc=[x+u/2,y+u/2];
+    if(!has(c.gx,c.gy-1)) edges.push({a:[x,y],b:[x+u,y],n:[0,-1],k:"up",cc});
+    if(!has(c.gx,c.gy+1)) edges.push({a:[x,y+u],b:[x+u,y+u],n:[0,1],k:"down",cc});
+    if(!has(c.gx-1,c.gy)) edges.push({a:[x,y],b:[x,y+u],n:[-1,0],k:"left",cc});
+    if(!has(c.gx+1,c.gy)) edges.push({a:[x+u,y],b:[x+u,y+u],n:[1,0],k:"right",cc});
+  });
+  const ks=new Set(edges.map(e=>e.k+":"+P(e.a)+":"+P(e.b)));
+  edges.forEach(e=>{const d=[e.b[0]-e.a[0],e.b[1]-e.a[1]];
+    e.startCap=!ks.has(e.k+":"+P([e.a[0]-d[0],e.a[1]-d[1]])+":"+P(e.a));
+    e.endCap=!ks.has(e.k+":"+P(e.b)+":"+P([e.b[0]+d[0],e.b[1]+d[1]]));});
+  return {cells,edges,u,box:{x:x0,y:y0,w:W,h:5*u}};
+}
+
+function distSeg(p,a,b){
+  const dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy;
+  let t=((p.x-a[0])*dx+(p.y-a[1])*dy)/L; t=Math.max(0,Math.min(1,t));
+  return Math.hypot(p.x-(a[0]+t*dx),p.y-(a[1]+t*dy));
+}
+const hsl=(h,s,l)=>`hsl(${((h%360)+360)%360} ${s}% ${Math.max(10,l)}%)`;
+const P=p=>p[0].toFixed(1)+","+p[1].toFixed(1);
+
+function colors(st){
+  const order=st.light==="tl"?{up:0,left:1,right:2,down:3}:{up:0,right:1,left:2,down:3};
+  if(st.scheme==="gray"){
+    const L=[82,64,47,33];
+    return {front:"#FFFFFF",side:k=>hsl(210,10,L[order[k]])};
+  }
+  const [h,s,l]=PALETTE[st.color];
+  const steps=[8,18,28,36];
+  const hh=st.scheme==="comp"?h+180:h;
+  return {front:hsl(h,s,l),side:k=>hsl(hh,s,l-steps[order[k]])};
+}
+
+function render(st,geo,opt={}){
+  if(!geo) return `<rect x="0" y="0" width="800" height="500" fill="var(--paper)"/><text x="400" y="255" text-anchor="middle" font-size="22" fill="${INK}">請輸入英文字母 A–Z</text>`;
+  const {edges,cells,u}=geo, vp=st.vp, step=st.step;
+  const len=Math.hypot(st.dir[0],st.dir[1]), D=[st.dir[0]/len,st.dir[1]/len];
+  const t=st.depth*0.05, L=st.depth*u*0.32;
+  const back=p=>st.mode==="persp"?[p[0]+(vp.x-p[0])*t,p[1]+(vp.y-p[1])*t]:[p[0]+D[0]*L,p[1]+D[1]*L];
+  const vis=e=>{
+    const m=[(e.a[0]+e.b[0])/2,(e.a[1]+e.b[1])/2];
+    return st.mode==="persp" ? (e.n[0]*(vp.x-m[0])+e.n[1]*(vp.y-m[1]))>0.5 : (e.n[0]*D[0]+e.n[1]*D[1])>0.01;
+  };
+  const key=e=>{
+    const m=e.cc;
+    if(st.mode==="persp") return Math.hypot(vp.x-m[0],vp.y-m[1]);
+    return -(m[0]*D[0]+m[1]*D[1]);
+  };
+  const visE=edges.filter(vis).sort((x,y)=>key(y)-key(x));
+  const allC=new Map(), visC=new Map();
+  edges.forEach(e=>{allC.set(P(e.a),e.a);allC.set(P(e.b),e.b);});
+  visE.forEach(e=>{visC.set(P(e.a),e.a);visC.set(P(e.b),e.b);});
+  const col=colors(st);
+  let s="";
+  if(!opt.mini){
+    s+=`<defs><pattern id="g" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="var(--grid)" stroke-width="1"/></pattern></defs>`;
+    s+=`<rect x="0" y="0" width="800" height="500" fill="var(--paper)"/><rect x="0" y="0" width="800" height="500" fill="url(#g)"/>`;
+  } else {
+    s+=`<rect x="0" y="0" width="800" height="500" fill="var(--paper)"/>`;
+  }
+  if(st.mode==="persp" && step<5 && !opt.mini){
+    s+=`<line x1="0" y1="${vp.y}" x2="800" y2="${vp.y}" stroke="#8FA3B1" stroke-width="1.2" stroke-dasharray="8 6"/>`;
+    s+=`<text x="12" y="${vp.y-8}" font-size="14" fill="#6B7F8D">地平線（視平線）</text>`;
+  }
+  if(step>=2 && step<5){
+    const op=step===2?0.85:0.3;
+    allC.forEach(p=>{
+      const q=st.mode==="persp"?[vp.x,vp.y]:[p[0]+D[0]*L*2.4,p[1]+D[1]*L*2.4];
+      s+=`<line x1="${p[0]}" y1="${p[1]}" x2="${q[0]}" y2="${q[1]}" stroke="var(--vp)" stroke-width="1" stroke-dasharray="4 4" opacity="${op}"/>`;
+    });
+  }
+  if(step===3){
+    visC.forEach(p=>{const q=back(p);
+      s+=`<line x1="${p[0]}" y1="${p[1]}" x2="${q[0]}" y2="${q[1]}" stroke="${INK}" stroke-width="2"/><circle cx="${q[0]}" cy="${q[1]}" r="3" fill="${INK}"/>`;});
+  }
+  if(step>=4){
+    visE.forEach(e=>{
+      const A=e.a,B=e.b,Bb=back(e.b),Ab=back(e.a);
+      const pts=[A,B,Bb,Ab].map(P).join(" ");
+      const fill=step===5?col.side(e.k):"#FFFFFF";
+      let d=`M${P(Ab)}L${P(Bb)}`; if(e.startCap) d+=`M${P(A)}L${P(Ab)}`; if(e.endCap) d+=`M${P(B)}L${P(Bb)}`;
+      s+=`<polygon points="${pts}" fill="${fill}" stroke="${fill}" stroke-width="1.3" stroke-linejoin="round"/><path d="${d}" stroke="${INK}" stroke-width="${step===5?1.2:1.6}" stroke-linecap="round" fill="none"/>`;
+    });
+  }
+  const ff=step===5?col.front:"#FFFFFF";
+  cells.forEach(c=>{ s+=`<rect x="${c.x-0.4}" y="${c.y-0.4}" width="${u+0.8}" height="${u+0.8}" fill="${ff}"/>`; });
+  s+=`<path d="${edges.map(e=>`M${P(e.a)}L${P(e.b)}`).join("")}" stroke="${INK}" stroke-width="${step===1?2.4:2}" stroke-linecap="round" fill="none"/>`;
+  if(st.mode==="persp" && (opt.mini || !opt.mini)){
+    const fade=step===5&&!opt.mini?0.35:1;
+    s+=`<g opacity="${fade}"><circle cx="${vp.x}" cy="${vp.y}" r="${opt.mini?7:10}" fill="var(--vp)" stroke="#fff" stroke-width="3"/>`;
+    s+=`<text x="${vp.x}" y="${vp.y-16}" text-anchor="middle" font-size="${opt.mini?18:15}" font-weight="700" fill="${INK}">消失點</text></g>`;
+  }
+  return s;
+}
+
+const stage=document.getElementById("stage");
+let geo=build(state.word);
+
+function tipText(){
+  if(!geo) return "目前沒有可畫的字母，請輸入 A–Z。";
+  const b=geo.box;
+  if(state.mode==="obl"){
+    const m={"1,1":"底面和右側面","-1,1":"底面和左側面","1,-1":"頂面和右側面","-1,-1":"頂面和左側面"};
+    return `厚度往同一個方向推出去，所以看得到字的${m[state.dir.join(",")]}。前後一樣大，沒有消失點。`;
+  }
+  const v=state.vp; let a,c;
+  if(v.y<b.y) a="消失點在字的上方，看得到字的頂面，像從上往下看。";
+  else if(v.y>b.y+b.h) a="消失點在字的下方，看得到字的底面，像從下往上看。";
+  else a="消失點和字差不多高，頂面、底面都很窄，主要看到側面。";
+  if(v.x>b.x+b.w) c="消失點在右邊，所以看到右側面。";
+  else if(v.x<b.x) c="消失點在左邊，所以看到左側面。";
+  else c="消失點在字的正上下方，左右兩側都會出現一點側面。";
+  return a+c;
+}
+
+function draw(){
+  stage.innerHTML=render(state,geo);
+  document.getElementById("tip").textContent=tipText();
+  document.getElementById("miniP").innerHTML=render({...state,word:"E",mode:"persp",step:5,scheme:"gray",vp:{x:590,y:80},depth:6},build("E"),{mini:true});
+  document.getElementById("miniO").innerHTML=render({...state,word:"E",mode:"obl",step:5,scheme:"gray",dir:[1,1],depth:6},build("E"),{mini:true});
+  renderSteps();
+}
+
+function renderSteps(){
+  const ol=document.getElementById("steps");
+  ol.innerHTML=STEPS[state.mode].map((s,i)=>`<li><button data-step="${i+1}" aria-pressed="${state.step===i+1}"><span class="n">${i+1}</span><span class="t">${s[0]}</span><span class="d">${s[1]}</span></button></li>`).join("");
+  document.getElementById("prev").disabled=state.step===1;
+  document.getElementById("next").disabled=state.step===5;
+}
+document.getElementById("steps").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-step]"); if(!b) return;
+  state.step=+b.dataset.step; draw();
+});
+document.getElementById("prev").onclick=()=>{ if(state.step>1){state.step--;draw();} };
+document.getElementById("next").onclick=()=>{ if(state.step<5){state.step++;draw();} };
+
+function setPressed(seg,attr,val){ seg.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset[attr]===val))); }
+
+const wordIn=document.getElementById("word");
+wordIn.addEventListener("input",()=>{
+  wordIn.value=wordIn.value.toUpperCase().replace(/[^A-Z ]/g,"");
+  state.word=wordIn.value; geo=build(state.word); draw();
+});
+document.querySelectorAll("[data-preset]").forEach(b=>b.onclick=()=>{
+  wordIn.value=b.dataset.preset; state.word=b.dataset.preset; geo=build(state.word); state.step=1; draw();
+});
+
+const modeSeg=document.getElementById("modeSeg");
+modeSeg.addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  state.mode=b.dataset.mode; setPressed(modeSeg,"mode",state.mode);
+  document.getElementById("dirField").hidden=state.mode!=="obl";
+  document.getElementById("resetField").hidden=state.mode!=="persp";
+  document.getElementById("hint").hidden=state.mode!=="persp";
+  draw();
+});
+const dirSeg=document.getElementById("dirSeg");
+dirSeg.addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  state.dir=b.dataset.dir.split(",").map(Number); setPressed(dirSeg,"dir",b.dataset.dir); draw();
+});
+document.getElementById("depth").addEventListener("input",e=>{ state.depth=+e.target.value; draw(); });
+const lightSeg=document.getElementById("lightSeg");
+lightSeg.addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  state.light=b.dataset.light; setPressed(lightSeg,"light",state.light); draw();
+});
+
+const sw=document.getElementById("swatches");
+const names=["紅","橙","黃","綠","藍","紫"];
+sw.innerHTML=PALETTE.map((c,i)=>`<button class="sw" data-c="${i}" style="background:${hsl(...c)}" aria-label="${names[i]}色" aria-pressed="${i===state.color}"></button>`).join("");
+const notes={gray:"灰階模式：正面留白最亮，側面依光源分出灰與暗。",same:"同色系：側面用正面顏色加深，越背光越深。",comp:"對比色：側面改用正面的對比色，字會更跳出來。"};
+function syncSwatches(){ sw.querySelectorAll(".sw").forEach(b=>{ b.disabled=state.scheme==="gray"; b.setAttribute("aria-pressed",String(+b.dataset.c===state.color)); }); document.getElementById("schemeNote").textContent=notes[state.scheme]; }
+sw.addEventListener("click",e=>{ const b=e.target.closest(".sw"); if(!b||b.disabled) return; state.color=+b.dataset.c; syncSwatches(); if(state.step<5) state.step=5; draw(); });
+const schemeSeg=document.getElementById("schemeSeg");
+schemeSeg.addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  state.scheme=b.dataset.scheme; setPressed(schemeSeg,"scheme",state.scheme); syncSwatches(); if(state.step<5) state.step=5; draw();
+});
+syncSwatches();
+
+document.getElementById("resetVP").onclick=()=>{ state.vp={...VP_DEFAULT}; draw(); };
+
+let dragging=false;
+function toSvg(e){ const p=stage.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(stage.getScreenCTM().inverse()); }
+function moveVP(e){ const p=toSvg(e); state.vp={x:Math.max(12,Math.min(788,p.x)),y:Math.max(30,Math.min(488,p.y))}; draw(); }
+stage.addEventListener("pointerdown",e=>{ if(state.mode!=="persp") return; dragging=true; stage.setPointerCapture(e.pointerId); moveVP(e); });
+stage.addEventListener("pointermove",e=>{ if(dragging) moveVP(e); });
+stage.addEventListener("pointerup",()=>dragging=false);
+stage.addEventListener("pointercancel",()=>dragging=false);
+stage.addEventListener("keydown",e=>{
+  if(state.mode!=="persp") return;
+  const d={ArrowLeft:[-10,0],ArrowRight:[10,0],ArrowUp:[0,-10],ArrowDown:[0,10]}[e.key];
+  if(!d) return; e.preventDefault();
+  state.vp={x:Math.max(12,Math.min(788,state.vp.x+d[0])),y:Math.max(30,Math.min(488,state.vp.y+d[1]))}; draw();
+});
+
+const QUIZ=[
+ {q:"一點透視法中，往後延伸的線最後會集中到哪裡？",o:["消失點","紙的四個角","字的正中央"],a:0,e:"所有往後退的平行線都會集中到同一個消失點，所以字的後端會變小。"},
+ {q:"消失點畫在字的上方，會看到字的哪一面？",o:["底面","頂面","背面"],a:1,e:"消失點代表眼睛的高度。眼睛比字高，就像從上往下看，看得到頂面。"},
+ {q:"平移厚度法和一點透視法最大的差別是什麼？",o:["平移厚度法要用兩個消失點","一點透視法不用尺","一點透視法的後端會變小"],a:2,e:"平移厚度法每條斜線等長、前後一樣大；一點透視法越往消失點越小。"},
+ {q:"被正面擋住的轉角，需要畫線連到消失點嗎？",o:["不用，看不到的部分不畫","每個轉角都一定要連","只連最上面的轉角"],a:0,e:"被正面擋住的線最後也會被擦掉，畫了反而讓畫面變亂。"},
+ {q:"光源在左上方時，哪些面最暗？",o:["正面","朝上的面","朝下和朝右的面"],a:2,e:"背對光源的面最暗。光從左上來，朝下、朝右的面背光。"}
+];
+let correct=0, answered=0;
+document.getElementById("quiz").innerHTML=QUIZ.map((q,i)=>`<div class="q" data-i="${i}"><p>${i+1}. ${q.q}</p><div class="opts">${q.o.map((o,j)=>`<button data-j="${j}">${o}</button>`).join("")}</div><div class="fb" aria-live="polite"></div></div>`).join("");
+document.getElementById("quiz").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  const box=b.closest(".q"); if(box.dataset.done) return;
+  const q=QUIZ[+box.dataset.i], j=+b.dataset.j;
+  box.dataset.done="1"; answered++;
+  box.querySelectorAll("button").forEach(x=>{ x.disabled=true; if(+x.dataset.j===q.a) x.classList.add("right"); });
+  if(j===q.a){ correct++; box.querySelector(".fb").textContent="答對了！"+q.e; }
+  else { b.classList.add("wrong"); box.querySelector(".fb").textContent="再想想："+q.e; }
+  document.getElementById("score").textContent=`已作答 ${answered} / ${QUIZ.length} 題，答對 ${correct} 題。`+(answered===QUIZ.length?(correct===QUIZ.length?"全部過關，可以開始畫你的作品了！":"回到上方練習板，再試一次看不懂的步驟。"):"");
+});
+
+draw();
+</script>
+</body>
+</html>
